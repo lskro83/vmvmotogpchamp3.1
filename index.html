@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>vMv | MotoGP - SAISON 10</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #050b14 0%, #0a1930 50%, #030712 100%);
+            color: #ffffff;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .bg-vmsdark { background-color: rgba(10, 25, 48, 0.95); }
+        .border-gold { border-color: #f3c614; }
+        .text-gold { color: #f3c614; }
+        .gold-gradient {
+            background: linear-gradient(90deg, #d4af37 0%, #ffe600 50%, #d4af37 100%);
+        }
+        .neon-glow {
+            box-shadow: 0 0 15px rgba(243, 198, 20, 0.3), inset 0 0 10px rgba(243, 198, 20, 0.1);
+        }
+        table.compact-table th, table.compact-table td {
+            padding: 3px 2px !important;
+            font-size: 9px !important;
+            white-space: nowrap;
+            text-align: center;
+        }
+        table.compact-table th:nth-child(2), table.compact-table td:nth-child(2) {
+            text-align: left;
+            max-width: 110px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        @media (min-width: 768px) {
+            table.compact-table th, table.compact-table td {
+                padding: 6px 8px !important;
+                font-size: 13px !important;
+            }
+            table.compact-table th:nth-child(2), table.compact-table td:nth-child(2) {
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen p-1 md:p-4">
+
+    <!-- En-tête officiel vMv -->
+    <div class="max-w-7xl mx-auto border-2 border-gold rounded-2xl p-3 bg-vmsdark neon-glow mb-3">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-r from-amber-400 to-yellow-300 text-black font-black px-3 py-1 rounded-lg text-lg tracking-wider shadow-lg">vMv</div>
+                <div>
+                    <h1 class="text-base md:text-xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-200 to-yellow-400 uppercase">MotoGP - SAISON 10</h1>
+                    <p class="text-[10px] text-cyan-300 font-semibold tracking-wider">POLE + SPRINT + COURSE LONGUE</p>
+                </div>
+            </div>
+            
+            <div class="flex flex-wrap gap-1.5 justify-center">
+                <button onclick="switchTab('constructors')" id="btn-constructors" class="px-3 py-1.5 font-black rounded-lg text-xs transition-all bg-amber-400 text-black shadow-md">🏆 Interligue</button>
+                <button onclick="switchTab('leagueA')" id="btn-leagueA" class="px-3 py-1.5 font-bold rounded-lg text-xs transition-all bg-blue-900/80 text-white border border-blue-500">🏁 Ligue A</button>
+                <button onclick="switchTab('leagueB')" id="btn-leagueB" class="px-3 py-1.5 font-bold rounded-lg text-xs transition-all bg-blue-900/80 text-white border border-blue-500">🏁 Ligue B</button>
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="toggleFitMode()" id="btn-fit" class="px-2.5 py-1.5 bg-amber-500 text-black font-extrabold rounded-lg text-xs shadow" title="Mode iPhone ajusté">📱 Ajusté</button>
+                <button onclick="toggleEditMode()" id="btn-edit" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs shadow">✏️ Éditer</button>
+                <button onclick="resetData()" class="px-2.5 py-1.5 bg-red-800 hover:bg-red-700 text-white font-bold rounded-lg text-xs shadow" title="Réinitialiser">🔄</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conteneur Principal -->
+    <div class="max-w-7xl mx-auto border-2 border-gold rounded-2xl bg-vmsdark overflow-hidden neon-glow">
+        <div id="table-title-banner" class="gold-gradient text-black text-center font-black py-2 text-xs md:text-base tracking-wider uppercase shadow-inner">
+            Classement Ecuries Interligue
+        </div>
+
+        <div id="table-wrapper" class="w-full">
+            <div id="app-content" class="p-1 w-full"></div>
+        </div>
+    </div>
+
+    <!-- Pied de page -->
+    <div class="max-w-7xl mx-auto mt-2 flex justify-between items-center text-[10px] text-slate-300 px-1 font-medium">
+        <span>💡 Remplaçants avec badge REM et choix d'écurie par GP !</span>
+        <span class="text-gold font-bold">[vMv] VilVinde Multigaming</span>
+    </div>
+
+    <script>
+        const circuits = [
+            { name: "Misano", flag: "🇮🇹" },
+            { name: "Phillip Island", flag: "🇦🇺" },
+            { name: "Sepang", flag: "🇲🇾" },
+            { name: "Aragon", flag: "🇪🇸" },
+            { name: "Austin", flag: "🇺🇸" },
+            { name: "Catalunya", flag: "🇪🇸" },
+            { name: "Portimao", flag: "🇵🇹" },
+            { name: "Mugello", flag: "🇮🇹" },
+            { name: "Motegi", flag: "🇯🇵" },
+            { name: "Jerez", flag: "🇪🇸" }
+        ];
+        
+        const teamsConfig = [
+            { id: "trackhouse", name: "Aprilia TrackHouse", shortName: "TrackHouse", badge: "TRK", logoBg: "#00b4d8", textColor: "#000" },
+            { id: "gresini", name: "Ducati Gresini", shortName: "Gresini Racing", badge: "GRS", logoBg: "#0077b6", textColor: "#fff" },
+            { id: "pramac", name: "Yamaha Pramac", shortName: "Pramac Yamaha", badge: "PMA", logoBg: "#7209b7", textColor: "#fff" },
+            { id: "ktm", name: "Red Bull KTM", shortName: "Red Bull KTM", badge: "KTM", logoBg: "#ff4d00", textColor: "#fff" },
+            { id: "lcr", name: "Honda LCR", shortName: "Honda LCR", badge: "LCR", logoBg: "#2d6a4f", textColor: "#fff" },
+            { id: "tech3", name: "KTM Tech 3", shortName: "Tech3 KTM", badge: "TC3", logoBg: "#fb8500", textColor: "#000" },
+            { id: "aprilia", name: "Aprilia Factory", shortName: "Aprilia Racing", badge: "APR", logoBg: "#3a0ca3", textColor: "#fff" },
+            { id: "ducati", name: "Ducati Lenovo", shortName: "Ducati Lenovo", badge: "DUC", logoBg: "#d90429", textColor: "#fff" },
+            { id: "yamaha", name: "Yamaha Factory", shortName: "Yamaha Factory", badge: "YAM", logoBg: "#1d3557", textColor: "#fff" },
+            { id: "hrc", name: "Honda HRC", shortName: "Honda HRC", badge: "HRC", logoBg: "#0077b6", textColor: "#fff" }
+        ];
+
+        const subTeamInfo = { id: "rem", name: "Remplaçant / Indépendant", badge: "REM", logoBg: "#4a5568", textColor: "#fff" };
+
+        const sprintPoints = [12, 9, 7, 6, 5, 4, 3, 2, 1];
+        const longPoints = [25, 20, 16, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
+
+        function getSprintPts(pos) {
+            return (pos >= 1 && pos <= 9) ? sprintPoints[pos - 1] : 0;
+        }
+
+        function getLongPts(pos) {
+            return (pos >= 1 && pos <= 15) ? longPoints[pos - 1] : 0;
+        }
+
+        let currentTab = 'constructors';
+        let isEditMode = false;
+        let isFitMode = true;
+
+        function generateDefaultPilots(leagueName) {
+            let pilots = [];
+            teamsConfig.forEach(team => {
+                for (let i = 1; i <= 2; i++) {
+                    pilots.push({
+                        id: `${leagueName}_${team.id}_${i}`,
+                        isSubstitute: false,
+                        name: `${team.shortName} (${leagueName === 'A' ? 'P1' : 'P2'})`,
+                        defaultTeamId: team.id,
+                        pole: new Array(10).fill(false),
+                        sprintPos: new Array(10).fill(0),
+                        longPos: new Array(10).fill(0),
+                        circuitTeams: new Array(10).fill(team.id)
+                    });
+                }
+            });
+            return pilots;
+        }
+
+        let appData = JSON.parse(localStorage.getItem('vmv_motoGP_saison10_v14')) || {
+            leagueA: generateDefaultPilots('A'),
+            leagueB: generateDefaultPilots('B')
+        };
+
+        function saveData() {
+            localStorage.setItem('vmv_motoGP_saison10_v14', JSON.stringify(appData));
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            ['constructors', 'leagueA', 'leagueB'].forEach(t => {
+                const btn = document.getElementById(`btn-${t}`);
+                if (t === tab) {
+                    btn.className = "px-3 py-1.5 font-black rounded-lg text-xs transition-all bg-amber-400 text-black shadow-md";
+                } else {
+                    btn.className = "px-3 py-1.5 font-bold rounded-lg text-xs transition-all bg-blue-900/80 text-white border border-blue-500";
+                }
+            });
+            render();
+        }
+
+        function toggleEditMode() {
+            isEditMode = !isEditMode;
+            const btn = document.getElementById('btn-edit');
+            if (isEditMode) {
+                btn.className = "px-2.5 py-1.5 bg-amber-500 text-black font-bold rounded-lg text-xs shadow";
+                btn.innerHTML = "💾 Verrouiller";
+            } else {
+                btn.className = "px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs shadow";
+                btn.innerHTML = "✏️ Éditer";
+            }
+            render();
+        }
+
+        function toggleFitMode() {
+            isFitMode = !isFitMode;
+            const btn = document.getElementById('btn-fit');
+            const wrapper = document.getElementById('table-wrapper');
+            if (isFitMode) {
+                btn.className = "px-2.5 py-1.5 bg-amber-500 text-black font-bold rounded-lg text-xs shadow";
+                wrapper.classList.remove('overflow-x-auto');
+            } else {
+                btn.className = "px-2.5 py-1.5 bg-sky-700 text-white font-bold rounded-lg text-xs shadow";
+                wrapper.classList.add('overflow-x-auto');
+            }
+            render();
+        }
+
+        function addPilot(leagueKey) {
+            const newId = `custom_${leagueKey}_${Date.now()}`;
+            appData[`league${leagueKey}`].push({
+                id: newId,
+                isSubstitute: true,
+                name: "Remplaçant",
+                defaultTeamId: "yamaha",
+                pole: new Array(10).fill(false),
+                sprintPos: new Array(10).fill(0),
+                longPos: new Array(10).fill(0),
+                circuitTeams: new Array(10).fill("yamaha")
+            });
+            saveData();
+            render();
+        }
+
+        function removePilot(leagueKey, pilotId) {
+            if (confirm("Supprimer ce pilote ?")) {
+                appData[`league${leagueKey}`] = appData[`league${leagueKey}`].filter(p => p.id !== pilotId);
+                saveData();
+                render();
+            }
+        }
+
+        function resetData() {
+            if (confirm("Réinitialiser tous les classements de la Saison 10 ?")) {
+                appData = {
+                    leagueA: generateDefaultPilots('A'),
+                    leagueB: generateDefaultPilots('B')
+                };
+                saveData();
+                render();
+            }
+        }
+
+        function updateResult(league, pilotId, circuitIdx, type, val) {
+            const pilot = appData[`league${league}`].find(p => p.id === pilotId);
+            if (pilot) {
+                if (type === 'pole') {
+                    pilot.pole[circuitIdx] = val;
+                } else if (type === 'sprint') {
+                    pilot.sprintPos[circuitIdx] = parseInt(val) || 0;
+                } else if (type === 'long') {
+                    pilot.longPos[circuitIdx] = parseInt(val) || 0;
+                }
+                saveData();
+                render();
+            }
+        }
+
+        function updateName(league, pilotId, newName) {
+            const pilot = appData[`league${league}`].find(p => p.id === pilotId);
+            if (pilot) {
+                pilot.name = newName;
+                saveData();
+            }
+        }
+
+        function updatePilotCircuitTeam(league, pilotId, circuitIdx, teamId) {
+            const pilot = appData[`league${league}`].find(p => p.id === pilotId);
+            if (pilot) {
+                if (!pilot.circuitTeams) pilot.circuitTeams = new Array(10).fill(pilot.defaultTeamId);
+                pilot.circuitTeams[circuitIdx] = teamId;
+                saveData();
+                render();
+            }
+        }
+
+        function getCircuitPoints(pilot, cIdx) {
+            let polePts = (pilot.pole && pilot.pole[cIdx]) ? 1 : 0;
+            return polePts + getSprintPts(pilot.sprintPos[cIdx]) + getLongPts(pilot.longPos[cIdx]);
+        }
+
+        function getTotalPilotScore(pilot) {
+            let total = 0;
+            for (let i = 0; i < 10; i++) {
+                total += getCircuitPoints(pilot, i);
+            }
+            return total;
+        }
+
+        function render() {
+            const container = document.getElementById('app-content');
+            const titleBanner = document.getElementById('table-title-banner');
+            container.className = isFitMode ? "p-0.5 w-full" : "p-1 min-w-[780px]";
+
+            if (currentTab === 'constructors') {
+                titleBanner.innerText = "🏆 CLASSEMENT ECURIES INTERLIGUE (POLE + SPRINT + LONGUE)";
+                
+                let constructorsSummary = teamsConfig.map(team => {
+                    let totalScores = new Array(10).fill(0);
+                    ['A', 'B'].forEach(leagueKey => {
+                        appData[`league${leagueKey}`].forEach(pilot => {
+                            for (let cIdx = 0; cIdx < 10; cIdx++) {
+                                let activeTeamId = pilot.circuitTeams && pilot.circuitTeams[cIdx] ? pilot.circuitTeams[cIdx] : pilot.defaultTeamId;
+                                if (activeTeamId === team.id) {
+                                    totalScores[cIdx] += getCircuitPoints(pilot, cIdx);
+                                }
+                            }
+                        });
+                    });
+                    let grandTotal = totalScores.reduce((a, b) => a + b, 0);
+                    return { ...team, total: grandTotal, circuitScores: totalScores };
+                });
+
+                constructorsSummary.sort((a, b) => b.total - a.total);
+
+                let html = `
+                    <table class="w-full text-left border-collapse compact-table">
+                        <thead>
+                            <tr class="bg-blue-950/90 text-gold border-b border-gold/30">
+                                <th class="w-6 md:w-8 text-center">POS</th>
+                                <th>ÉCURIE OFFICIELLE</th>
+                                <th class="text-center w-8 md:w-12">TOT</th>
+                                ${circuits.map(c => `<th class="text-center" title="${c.name}">${c.flag}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                constructorsSummary.forEach((item, index) => {
+                    html += `
+                        <tr class="border-b border-slate-800/80 hover:bg-slate-900/60 transition-colors">
+                            <td class="text-center font-bold text-slate-300">${index + 1}</td>
+                            <td class="font-bold flex items-center gap-1.5 py-1.5">
+                                <span class="px-1.5 py-0.5 rounded text-[9px] font-black shadow" style="background-color: ${item.logoBg}; color: ${item.textColor};">${item.badge}</span>
+                                <span class="text-white truncate">${item.name}</span>
+                            </td>
+                            <td class="text-center font-black text-gold bg-black/30">${item.total}</td>
+                            ${item.circuitScores.map(score => `<td class="text-center font-semibold text-slate-200">${score}</td>`).join('')}
+                        </tr>
+                    `;
+                });
+
+                html += `</tbody></table>`;
+                container.innerHTML = html;
+
+            } else {
+                let leagueKey = currentTab === 'leagueA' ? 'A' : 'B';
+                titleBanner.innerText = `🏁 CLASSEMENT LIGUE ${leagueKey} & REMPLAÇANTS`;
+
+                let pilots = [...appData[`league${leagueKey}`]];
+                pilots.forEach(p => {
+                    p.total = getTotalPilotScore(p);
+                });
+                pilots.sort((a, b) => b.total - a.total);
+
+                let html = `
+                    <table class="w-full text-left border-collapse compact-table">
+                        <thead>
+                            <tr class="bg-blue-950/90 text-gold border-b border-gold/30">
+                                <th class="w-6 md:w-8 text-center">POS</th>
+                                <th>PILOTE / JOUEUR</th>
+                                <th class="text-center w-8 md:w-12">TOT</th>
+                                ${circuits.map(c => `<th class="text-center" title="${c.name}">${c.flag}</th>`).join('')}
+                                ${isEditMode ? `<th class="text-center">ACT</th>` : ''}
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                pilots.forEach((pilot, index) => {
+                    let isSub = pilot.isSubstitute;
+                    let displayBadge = isSub ? subTeamInfo : (teamsConfig.find(t => t.id === pilot.defaultTeamId) || teamsConfig[0]);
+
+                    html += `
+                        <tr class="border-b border-slate-800/80 hover:bg-slate-900/60 transition-colors">
+                            <td class="text-center font-bold text-slate-300">${index + 1}</td>
+                            <td class="py-1.5">
+                                <div class="flex items-center gap-1">
+                                    <span class="px-1 py-0.5 rounded text-[8px] font-black shadow shrink-0" style="background-color: ${displayBadge.logoBg}; color: ${displayBadge.textColor};" title="${displayBadge.name}">${displayBadge.badge}</span>
+                                    ${isEditMode ? 
+                                        `<input type="text" value="${pilot.name}" onchange="updateName('${leagueKey}', '${pilot.id}', this.value)" class="bg-slate-900 border border-slate-700 text-white px-1 py-0.5 rounded text-[10px] w-full">` : 
+                                        `<span class="text-white font-bold truncate">${pilot.name}</span>`
+                                    }
+                                </div>
+                            </td>
+                            <td class="text-center font-black text-gold bg-black/30">${pilot.total}</td>
+                            ${pilots[0].sprintPos.map((_, cIdx) => {
+                                let activeTeamId = pilot.circuitTeams && pilot.circuitTeams[cIdx] ? pilot.circuitTeams[cIdx] : pilot.defaultTeamId;
+                                let activeTeamObj = teamsConfig.find(t => t.id === activeTeamId) || teamsConfig[0];
+                                
+                                let hasPole = pilot.pole && pilot.pole[cIdx];
+                                let sPos = pilot.sprintPos[cIdx] || 0;
+                                let lPos = pilot.longPos[cIdx] || 0;
+                                let totalCtsPts = getCircuitPoints(pilot, cIdx);
+
+                                return `
+                                    <td class="text-center">
+                                        ${isEditMode ? `
+                                            <div class="flex flex-col gap-0.5 items-center p-0.5 bg-slate-900/90 rounded border border-slate-700">
+                                                <select onchange="updatePilotCircuitTeam('${leagueKey}', '${pilot.id}', ${cIdx}, this.value)" class="text-[7px] bg-black text-amber-300 border border-amber-500 rounded px-0.5" title="Écurie pour ce GP">
+                                                    ${teamsConfig.map(t => `<option value="${t.id}" ${t.id === activeTeamId ? 'selected' : ''}>${t.badge}</option>`).join('')}
+                                                </select>
+                                                <div class="flex gap-0.5 text-[8px] items-center">
+                                                    <span class="text-yellow-400">P:</span>
+                                                    <input type="checkbox" ${hasPole ? 'checked' : ''} onchange="updateResult('${leagueKey}', '${pilot.id}', ${cIdx}, 'pole', this.checked)" class="cursor-pointer">
+                                                </div>
+                                                <div class="flex gap-0.5 text-[8px]">
+                                                    <span class="text-cyan-400">S:</span>
+                                                    <select onchange="updateResult('${leagueKey}', '${pilot.id}', ${cIdx}, 'sprint', this.value)" class="bg-black text-white rounded text-[8px]">
+                                                        <option value="0">-</option>
+                                                        ${[...Array(20)].map((_, i) => `<option value="${i+1}" ${sPos === i+1 ? 'selected' : ''}>${i+1}e (${getSprintPts(i+1)}p)</option>`).join('')}
+                                                    </select>
+                                                </div>
+                                                <div class="flex gap-0.5 text-[8px]">
+                                                    <span class="text-amber-400">L:</span>
+                                                    <select onchange="updateResult('${leagueKey}', '${pilot.id}', ${cIdx}, 'long', this.value)" class="bg-black text-white rounded text-[8px]">
+                                                        <option value="0">-</option>
+                                                        ${[...Array(20)].map((_, i) => `<option value="${i+1}" ${lPos === i+1 ? 'selected' : ''}>${i+1}e (${getLongPts(i+1)}p)</option>`).join('')}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        ` : `
+                                            <div class="inline-block px-1.5 py-0.5 rounded font-semibold shadow" style="background-color: ${activeTeamObj.logoBg}; color: ${activeTeamObj.textColor};" title="Écurie: ${activeTeamObj.name} | Pole: ${hasPole ? 'Oui (+1pt)' : 'Non'} | Sprint pos: ${sPos || '-'} | Longue pos: ${lPos || '-'}">
+                                                ${totalCtsPts}
+                                            </div>
+                                        `}
+                                    </td>
+                                `;
+                            }).join('')}
+                            ${isEditMode ? `
+                                <td class="text-center">
+                                    <button onclick="removePilot('${leagueKey}', '${pilot.id}')" class="bg-red-700 text-white px-1 py-0.5 rounded text-[9px]">❌</button>
+                                </td>
+                            ` : ''}
+                        </tr>
+                    `;
+                });
+
+                html += `</tbody></table>`;
+                
+                if (isEditMode) {
+                    html += `
+                        <div class="p-3 text-center">
+                            <button onclick="addPilot('${leagueKey}')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-1.5 rounded-lg text-xs shadow-lg">
+                                ➕ Ajouter un Pilote / Remplaçant à la Ligue ${leagueKey}
+                            </button>
+                        </div>
+                    `;
+                }
+
+                container.innerHTML = html;
+            }
+        }
+
+        render();
+    </script>
+</body>
+</html>
